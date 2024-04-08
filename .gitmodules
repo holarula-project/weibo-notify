@@ -1,0 +1,3 @@
+[submodule "weibo-crawler"]
+	path = weibo-crawler
+	url = https://github.com/dataabc/weibo-crawler.git
