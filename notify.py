@@ -13,7 +13,7 @@ con = connect("./weibo-crawler/weibo/weibodata.db")
 con.row_factory = Row
 cur = con.cursor()
 
-WEBHOOK_URL = environ("WEBHOOK_URL")
+WEBHOOK_URL = environ.get("WEBHOOK_URL")
 webhook: Webhook = None
 
 
