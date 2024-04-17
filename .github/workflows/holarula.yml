@@ -34,7 +34,7 @@ jobs:
       - name: 开爬！
         run: |
           cp ./holarula.json ./weibo-crawler/config.json
-          (cd ./weibo-crawler && python ./weibo.py)
+          (cd ./weibo-crawler && python ./weibo.py > /dev/null 2>&1)
       - name: 发送到 Discord
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
