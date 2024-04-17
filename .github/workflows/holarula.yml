@@ -26,7 +26,7 @@ jobs:
       - name: 更新 submodules
         run: |
           git add -A
-          git commit -m "更新 weibo-crawler"
+          git commit -m "更新 weibo-crawler" || echo "无更新"
       - name: 安装依赖
         run: |
           pip install -r requirements.txt
