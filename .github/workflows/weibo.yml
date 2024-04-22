@@ -81,7 +81,7 @@ jobs:
           (cd ./weibo-crawler && pip install -r requirements.txt)
       - name: 开爬！
         run: |
-          cp ./senjounku.json ./weibo-crawler/config.json
+          cp ./senjounkun.json ./weibo-crawler/config.json
           (cd ./weibo-crawler && python ./weibo.py > /dev/null 2>&1)
       - name: 发送到 Discord
         env:
