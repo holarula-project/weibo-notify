@@ -41,6 +41,11 @@ jobs:
       - name: 发送到 Discord
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_LAN }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_KEY_ID: ${{ secrets.S3_KEY_ID }}
+          S3_KEY_SECRET: ${{ secrets.S3_KEY_SECRET }}
+          S3_REGION: ${{ secrets.S3_REGION }}
+          S3_URL: ${{ secrets.S3_URL }}
         run: python ./notify.py holarula
       - name: 重设 weibo-crawler 文件夹
         run: (cd ./weibo-crawler && git checkout -- .)
@@ -81,6 +86,11 @@ jobs:
       - name: 发送到 Discord
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_XT }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_KEY_ID: ${{ secrets.S3_KEY_ID }}
+          S3_KEY_SECRET: ${{ secrets.S3_KEY_SECRET }}
+          S3_REGION: ${{ secrets.S3_REGION }}
+          S3_URL: ${{ secrets.S3_URL }}
         run: python ./notify.py senjoukun
       - name: 重设 weibo-crawler 文件夹
         run: (cd ./weibo-crawler && git checkout -- .)
