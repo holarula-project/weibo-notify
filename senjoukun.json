@@ -1,0 +1,26 @@
+{
+  "user_id_list": ["2297117134"],
+  "only_crawl_original": 0,
+  "since_date": 7,
+  "start_page": 0,
+  "write_mode": ["sqlite"],
+  "original_pic_download": 1,
+  "retweet_pic_download": 1,
+  "original_video_download": 1,
+  "retweet_video_download": 1,
+  "download_comment": 1,
+  "comment_max_download_count": 10000,
+  "download_repost": 1,
+  "repost_max_download_count": 0,
+  "user_id_as_folder_name": 0,
+  "remove_html_tag": 1,
+  "cookie": "your cookie",
+  "mysql_config": {
+    "host": "localhost",
+    "port": 3306,
+    "user": "root",
+    "password": "123456",
+    "charset": "utf8mb4"
+  },
+  "mongodb_URI": "mongodb://[username:password@]host[:port][/[defaultauthdb][?options]]"
+}
