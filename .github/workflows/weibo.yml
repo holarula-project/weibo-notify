@@ -2,7 +2,7 @@ name: 定期运行
 
 on:
   schedule:
-    - cron: "*/15 * * * *" # 15分钟运行一次
+    - cron: "*/20 * * * *" # 15分钟运行一次
   workflow_dispatch:
 
 permissions:
@@ -49,9 +49,9 @@ jobs:
         run: python ./notify.py holarula
       - name: 重设 weibo-crawler 文件夹
         run: (cd ./weibo-crawler && git checkout -- .)
-      - name: 保存sent.json
+      - name: 保存发送记录
         run: |
-          git add ./sent.json
+          git add ./holarula_sent.json
           git commit -m "更新微博" || echo "无新微博"
           git push
   senjoukun:
@@ -81,7 +81,7 @@ jobs:
           (cd ./weibo-crawler && pip install -r requirements.txt)
       - name: 开爬！
         run: |
-          cp ./holarula.json ./weibo-crawler/config.json
+          cp ./senjounku.json ./weibo-crawler/config.json
           (cd ./weibo-crawler && python ./weibo.py > /dev/null 2>&1)
       - name: 发送到 Discord
         env:
@@ -94,9 +94,9 @@ jobs:
         run: python ./notify.py senjoukun
       - name: 重设 weibo-crawler 文件夹
         run: (cd ./weibo-crawler && git checkout -- .)
-      - name: 保存sent.json
+      - name: 保存发送记录
         run: |
-          git add ./sent.json
+          git add ./senjoukun_sent.json
           git commit -m "更新微博" || echo "无新微博"
           git push
         
