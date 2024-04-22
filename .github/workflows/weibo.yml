@@ -1,0 +1,92 @@
+name: 定期运行
+
+on:
+  schedule:
+    - cron: "*/15 * * * *" # 15分钟运行一次
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  holarula:
+    name: "阿岚"
+    runs-on: ubuntu-latest
+    concurrency:
+      group: weibo
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip" # caching pip dependencies
+      - name: 设置 git 用户
+        run: |
+          git config user.name Yanagi
+          git config user.email 149839228+senjoukun@users.noreply.github.com
+      - name: 更新 submodules
+        run: |
+          git add -A
+          git commit -m "更新 weibo-crawler" || echo "无更新"
+      - name: 安装依赖
+        run: |
+          pip install -r requirements.txt
+          (cd ./weibo-crawler && pip install -r requirements.txt)
+      - name: 开爬！
+        run: |
+          cp ./holarula.json ./weibo-crawler/config.json
+          (cd ./weibo-crawler && python ./weibo.py > /dev/null 2>&1)
+      - name: 发送到 Discord
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_LAN }}
+        run: python ./notify.py holarula
+      - name: 重设 weibo-crawler 文件夹
+        run: (cd ./weibo-crawler && git checkout -- .)
+      - name: 保存sent.json
+        run: |
+          git add ./sent.json
+          git commit -m "更新微博" || echo "无新微博"
+          git push
+  senjoukun:
+    name: "线条"
+    runs-on: ubuntu-latest
+    concurrency:
+      group: weibo
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip" # caching pip dependencies
+      - name: 设置 git 用户
+        run: |
+          git config user.name Yanagi
+          git config user.email 149839228+senjoukun@users.noreply.github.com
+      - name: 更新 submodules
+        run: |
+          git add -A
+          git commit -m "更新 weibo-crawler" || echo "无更新"
+      - name: 安装依赖
+        run: |
+          pip install -r requirements.txt
+          (cd ./weibo-crawler && pip install -r requirements.txt)
+      - name: 开爬！
+        run: |
+          cp ./holarula.json ./weibo-crawler/config.json
+          (cd ./weibo-crawler && python ./weibo.py > /dev/null 2>&1)
+      - name: 发送到 Discord
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_XT }}
+        run: python ./notify.py senjoukun
+      - name: 重设 weibo-crawler 文件夹
+        run: (cd ./weibo-crawler && git checkout -- .)
+      - name: 保存sent.json
+        run: |
+          git add ./sent.json
+          git commit -m "更新微博" || echo "无新微博"
+          git push
+        
