@@ -1,11 +1,13 @@
 from asyncio import run
 from datetime import datetime
 from json import dumps, loads
-from os import environ
+from os import environ, stat
 from os.path import basename, exists
 from sqlite3 import Row, connect
+from sys import argv
 from time import sleep
 
+import boto3
 from aiohttp import ClientSession
 from discord import Embed, File, Object, Webhook, WebhookMessage
 
@@ -16,6 +18,7 @@ cur = con.cursor()
 WEBHOOK_URL = environ.get("WEBHOOK_URL")
 webhook: Webhook = None
 
+sent_list = ""
 
 # 发送记录状态
 STATUS = {
@@ -34,7 +37,7 @@ def check_sent(weibo: Row) -> int:
     Returns:
         int: 发送记录状态
     """
-    file = open("./sent.json", "r+", encoding="utf-8")
+    file = open(sent_list, "r+", encoding="utf-8")
     data = file.read()
     if len(data) == 0:
         data = "[]"
@@ -56,7 +59,7 @@ def should_resent(weibo: Row):
     Returns:
         bool: 是否应该二次更新
     """
-    file = open("./sent.json", "r+", encoding="utf-8")
+    file = open(sent_list, "r+", encoding="utf-8")
     data = file.read()
     file.close()
     sent = loads(data)
@@ -86,11 +89,11 @@ def update_sent(weibo: Row, msg_id: int, status: int):
     }
 
     # 获取现记录
-    file = open("./sent.json", "r", encoding="utf-8")
+    file = open(sent_list, "r", encoding="utf-8")
     data = file.read()
     file.close()
 
-    file = open("./sent.json", "w", encoding="utf-8")
+    file = open(sent_list, "w", encoding="utf-8")
 
     if len(data) == 0:  # 空白文件
         file.write(dumps([send_obj]))
@@ -112,6 +115,18 @@ def update_sent(weibo: Row, msg_id: int, status: int):
     file.close()
 
 
+def get_file_mb(file: File):
+    """获取文件大小
+
+    Args:
+        file (File): 文件
+
+    Returns:
+        float: 文件 MB 大小
+    """
+    return stat(file.fp.name).st_size / (1024 * 1024.0)
+
+
 def get_msg_id(weibo: Row):
     """获取已发送微博的 Discord 信息 ID
 
@@ -124,7 +139,7 @@ def get_msg_id(weibo: Row):
     Returns:
         int: Discord 信息 ID
     """
-    file = open("./sent.json", "r", encoding="utf-8")
+    file = open(sent_list, "r", encoding="utf-8")
     data = file.read()
     sent = loads(data)
     file.close()
@@ -235,11 +250,48 @@ async def send_pics(weibo: Row, thread: WebhookMessage):
                     img_files.append(File(pic["path"], basename(pic["path"])))
                     break
 
-        # 每次最多发送9张图片
-        for i in range(0, len(img_files), 9):
-            files = img_files[i : i + 9]
-            if len(files) > 0:
-                await webhook.send(files=files, thread=thread)
+        start = 0
+        end = 0
+        payload_size = 0
+        i = 0
+        while i < len(img_files):
+            mb = get_file_mb(img_files[i])
+
+            if mb > 25:
+                raise Exception("单文件不可大于25MB")
+
+            # 加新文件少于 25 MB 以及总文件数少于 9
+            if payload_size + mb < 25 and (end - start) < 9:
+                end += 1
+                payload_size += mb
+                i += 1
+
+                if i == len(img_files):
+                    await webhook.send(files=img_files[start:end], thread=thread)
+            # 每次最多发送9张图片 or 25 MB
+            elif payload_size + mb > 25 or (end - start) == 9:
+                await webhook.send(files=img_files[start:end], thread=thread)
+                start = i
+                end = i
+                payload_size = 0
+
+
+def upload_to_s3(file: File):
+    """上传视频到兼容S3的服务器。
+
+    Args:
+        file (File): 视频文件对象
+    """
+    s3 = boto3.client(
+        service_name="s3",
+        endpoint_url=environ.get("S3_URL"),
+        aws_access_key_id=environ.get("S3_KEY_ID"),
+        aws_secret_access_key=environ.get("S3_KEY_SECRET"),
+        region_name=environ.get("S3_REGION"),
+    )
+
+    s3.upload_file(file.fp.name, environ.get("S3_BUCKET"), file.filename)
+    s3.close()
 
 
 async def send_vid(weibo: Row, thread: WebhookMessage):
@@ -256,9 +308,12 @@ async def send_vid(weibo: Row, thread: WebhookMessage):
 
         for vid in vids:
             if weibo["video_url"] == vid["url"] and exists(vid["path"]):
-                await webhook.send(
-                    files=[File(vid["path"], basename(vid["path"]))], thread=thread
-                )
+                file = File(vid["path"], basename(vid["path"]))
+                mb = get_file_mb(file)
+                if mb > 25:
+                    upload_to_s3(file)
+                else:
+                    await webhook.send(files=[file], thread=thread)
 
 
 async def send_comments(weibo: Row, thread: WebhookMessage):
@@ -275,7 +330,13 @@ async def send_comments(weibo: Row, thread: WebhookMessage):
     cidx = 0
 
     for comment in comments:
-        new_comment = f"> `{'🦝 ' if comment['user_id'] == '1789152110' else '💬 '}{comment['user_screen_name']} 📅({comment['created_at']})`:\n```\n{comment['text']}\n```\n"
+        emoji = "💬"
+
+        if comment["user_id"] == "1789152110":
+            emoji = "🦝"
+        elif comment["user_id"] == "2297117134":
+            emoji = "🧵"
+        new_comment = f"> `{emoji} {comment['user_screen_name']} 📅({comment['created_at']})`:\n```\n{comment['text']}\n```\n"
         # 每个信息最多2000字符
         if len(comment_list[cidx]) + len(new_comment) > 1990:
             comment_list.append(new_comment)
@@ -293,6 +354,17 @@ async def update_divider(thread):
         "```\n" + ("-" * 25) + datetime.now().isoformat() + ("-" * 25) + "\n```",
         thread=thread,
     )
+
+
+def check():
+    if len(argv) != 2:
+        raise Exception("必须传入一个参数")
+
+    if argv[1] not in ("holarula", "senjoukun"):
+        raise Exception(f'无效参数 "{argv[1]}"')
+
+    global sent_list
+    sent_list = f"./{argv[1]}_sent.json"
 
 
 async def main():
@@ -313,7 +385,7 @@ async def main():
                 sleep(2)
                 await send_comments(weibo, thread)
                 sleep(2)
-                update_sent(weibo, thread.id, STATUS["RESENT"])
+                update_sent(weibo, thread.id, STATUS["SENT"])
             elif sent_status == STATUS["SENT"] and should_resent(weibo):
                 msg_id = get_msg_id(weibo)
                 thread = await get_msg_by_id(msg_id)
@@ -328,4 +400,5 @@ async def main():
 
 
 if __name__ == "__main__":
+    check()
     run(main())
