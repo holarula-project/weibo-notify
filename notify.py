@@ -1,3 +1,4 @@
+import subprocess
 from asyncio import run
 from datetime import datetime
 from json import dumps, loads
@@ -5,7 +6,6 @@ from os import environ, stat
 from os.path import abspath, basename, exists
 from shlex import split
 from sqlite3 import Row, connect
-from subprocess import run
 from sys import argv
 from time import sleep
 
@@ -312,7 +312,7 @@ async def send_vid(weibo: Row, thread: WebhookMessage):
             if weibo["video_url"] == vid["url"] and exists(vid["path"]):
                 file = File(vid["path"], basename(vid["path"]))
                 mb = get_file_mb(file)
-                err_msg = run(
+                err_msg = subprocess.run(
                     split(f"ffmpeg -v error -i {abspath(vid['path'])} -f null -"),
                     capture_output=True,
                 ).stderr.decode("utf-8")
@@ -324,7 +324,7 @@ async def send_vid(weibo: Row, thread: WebhookMessage):
                     await webhook.send(msg)
                 else:
                     await webhook.send(
-                        content=err_msg if len(err_msg) > 0 else None,
+                        content=err_msg if len(err_msg) > 0 else "",
                         files=[file],
                         thread=thread,
                     )
