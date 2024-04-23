@@ -2,8 +2,10 @@ from asyncio import run
 from datetime import datetime
 from json import dumps, loads
 from os import environ, stat
-from os.path import basename, exists
+from os.path import abspath, basename, exists
+from shlex import split
 from sqlite3 import Row, connect
+from subprocess import run
 from sys import argv
 from time import sleep
 
@@ -310,10 +312,22 @@ async def send_vid(weibo: Row, thread: WebhookMessage):
             if weibo["video_url"] == vid["url"] and exists(vid["path"]):
                 file = File(vid["path"], basename(vid["path"]))
                 mb = get_file_mb(file)
+                err_msg = run(
+                    split(f"ffmpeg -v error -i {abspath(vid['path'])} -f null -"),
+                    capture_output=True,
+                ).stderr.decode("utf-8")
                 if mb > 25:
                     upload_to_s3(file)
+                    msg = f"> 已上传视频: `{file.filename}` ({round(mb, 2)}MB)"
+                    if len(err_msg) > 0:
+                        msg += f"\n${err_msg}"
+                    await webhook.send(msg)
                 else:
-                    await webhook.send(files=[file], thread=thread)
+                    await webhook.send(
+                        content=err_msg if len(err_msg) > 0 else None,
+                        files=[file],
+                        thread=thread,
+                    )
 
 
 async def send_comments(weibo: Row, thread: WebhookMessage):
