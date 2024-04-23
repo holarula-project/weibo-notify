@@ -1,7 +1,7 @@
 {
   "user_id_list": ["1789152110"],
   "only_crawl_original": 0,
-  "since_date": 7,
+  "since_date": 3,
   "start_page": 0,
   "write_mode": ["sqlite"],
   "original_pic_download": 1,
