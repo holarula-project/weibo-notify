@@ -24,8 +24,8 @@ jobs:
           cache: "pip" # caching pip dependencies
       - name: 设置 git 用户
         run: |
-          git config user.name Yanagi
-          git config user.email 149839228+senjoukun@users.noreply.github.com
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: 更新 submodules
         run: |
           git add -A
@@ -71,8 +71,8 @@ jobs:
           cache: "pip" # caching pip dependencies
       - name: 设置 git 用户
         run: |
-          git config user.name Yanagi
-          git config user.email 149839228+senjoukun@users.noreply.github.com
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: 更新 submodules
         run: |
           git add -A
