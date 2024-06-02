@@ -52,6 +52,7 @@ jobs:
         run: (cd ./weibo-crawler && git checkout -- .)
       - name: 保存发送记录
         run: |
+          git pull
           git add ./holarula_sent.json
           git commit -m "更新微博" || echo "无新微博"
           git push
@@ -98,7 +99,7 @@ jobs:
         run: (cd ./weibo-crawler && git checkout -- .)
       - name: 保存发送记录
         run: |
+          git pull
           git add ./senjoukun_sent.json
           git commit -m "更新微博" || echo "无新微博"
           git push
-        
