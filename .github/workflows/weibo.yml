@@ -2,7 +2,7 @@ name: 定期运行
 
 on:
   schedule:
-    - cron: "*/20 * * * *" # 15分钟运行一次
+    - cron: "*/20 * * * *" # 20分钟运行一次
   workflow_dispatch:
 
 permissions:
