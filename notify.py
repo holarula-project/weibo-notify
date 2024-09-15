@@ -8,6 +8,7 @@ from shlex import split
 from sqlite3 import Row, connect
 from sys import argv
 from time import sleep
+from typing import cast
 
 import boto3
 from aiohttp import ClientSession
@@ -17,8 +18,8 @@ con = connect("./weibo-crawler/weibo/weibodata.db")
 con.row_factory = Row
 cur = con.cursor()
 
-WEBHOOK_URL = environ.get("WEBHOOK_URL")
-webhook: Webhook = None
+WEBHOOK_URL: str = cast(str, environ.get("WEBHOOK_URL"))
+webhook: Webhook | None = None
 
 sent_list = ""
 
@@ -145,7 +146,7 @@ def get_msg_id(weibo: Row):
     data = file.read()
     sent = loads(data)
     file.close()
-    for idx, item in enumerate(sent):
+    for _idx, item in enumerate(sent):
         if item["id"] == weibo["id"] or item["bid"] == weibo["bid"]:
             return item["msg_id"]
 
@@ -161,17 +162,17 @@ async def get_msg_by_id(id: int):
     Returns:
         WebhookMessage: webhook 发送过的 Discord 信息
     """
-    return await webhook.fetch_message(id, thread=Object(id))
+    return await cast(Webhook, webhook).fetch_message(id, thread=Object(id))
 
 
-async def create_thread(weibo: Row):
+async def create_thread(weibo: Row) -> WebhookMessage:
     """发送微博文字信息到discord
 
     Args:
         weibo (dict): 微博数据
     """
 
-    thread: WebhookMessage = None
+    thread: WebhookMessage | None = None
 
     # 每次最多4096字符
     for i in range(0, len(weibo["text"]), 4096):
@@ -197,11 +198,13 @@ async def create_thread(weibo: Row):
             elif len(weibo["text"].strip()) > 0:
                 thread_name = weibo["text"][0:100]
 
-            thread = await webhook.send(embed=msg, wait=True, thread_name=thread_name)
+            thread = await cast(Webhook, webhook).send(
+                embed=msg, wait=True, thread_name=thread_name
+            )
         else:
-            await webhook.send(embed=msg, thread=thread)
+            await cast(Webhook, webhook).send(embed=msg, thread=thread)
 
-    return thread
+    return cast(WebhookMessage, thread)
 
 
 async def resent_updated_msg(weibo: Row, thread: WebhookMessage):
@@ -212,7 +215,9 @@ async def resent_updated_msg(weibo: Row, thread: WebhookMessage):
         thread (WebhookMessage): 回复的目标 Discord 微博帖子
     """
     for idx, embed in enumerate(thread.embeds):
-        discord_text = embed.description.strip()
+        discord_text = (
+            embed.description.strip() if embed.description is not None else ""
+        )
         weibo_text = weibo["text"][idx * 4096 : 4096].strip()
         if discord_text != weibo_text:
             msg = Embed(
@@ -228,7 +233,7 @@ async def resent_updated_msg(weibo: Row, thread: WebhookMessage):
                 msg.add_field(name="转发", value=weibo["reposts_count"], inline=True)
                 msg.add_field(name="留言", value=weibo["comments_count"], inline=True)
                 msg.add_field(name="点赞", value=weibo["attitudes_count"], inline=True)
-            await webhook.send(embed=msg, wait=True, thread=thread)
+            await cast(Webhook, webhook).send(embed=msg, wait=True, thread=thread)
 
 
 async def send_pics(weibo: Row, thread: WebhookMessage):
@@ -269,10 +274,14 @@ async def send_pics(weibo: Row, thread: WebhookMessage):
                 i += 1
 
                 if i == len(img_files):
-                    await webhook.send(files=img_files[start:end], thread=thread)
+                    await cast(Webhook, webhook).send(
+                        files=img_files[start:end], thread=thread
+                    )
             # 每次最多发送9张图片 or 25 MB
             elif payload_size + mb > 25 or (end - start) == 9:
-                await webhook.send(files=img_files[start:end], thread=thread)
+                await cast(Webhook, webhook).send(
+                    files=img_files[start:end], thread=thread
+                )
                 start = i
                 end = i
                 payload_size = 0
@@ -321,9 +330,9 @@ async def send_vid(weibo: Row, thread: WebhookMessage):
                     msg = f"> 已上传视频: `{file.filename}` ({round(mb, 2)}MB)"
                     if len(err_msg) > 0:
                         msg += f"\n${err_msg}"
-                    await webhook.send(msg)
+                    await cast(Webhook, webhook).send(msg)
                 else:
-                    await webhook.send(
+                    await cast(Webhook, webhook).send(
                         content=err_msg if len(err_msg) > 0 else "",
                         files=[file],
                         thread=thread,
@@ -360,11 +369,11 @@ async def send_comments(weibo: Row, thread: WebhookMessage):
     # 每次2000字符多次发送
     for comment_msg in comment_list:
         if len(comment_msg.strip()) > 0:
-            await webhook.send(comment_msg, thread=thread)
+            await cast(Webhook, webhook).send(comment_msg, thread=thread)
 
 
 async def update_divider(thread):
-    await webhook.send(
+    await cast(Webhook, webhook).send(
         "```\n" + ("-" * 25) + datetime.now().isoformat() + ("-" * 25) + "\n```",
         thread=thread,
     )
