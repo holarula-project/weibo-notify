@@ -32,6 +32,7 @@ jobs:
           git commit -m "更新 weibo-crawler" || echo "无更新"
       - name: 安装依赖
         run: |
+          sudo apt update
           sudo apt install ffmpeg
           pip install -r requirements.txt
           (cd ./weibo-crawler && pip install -r requirements.txt)
@@ -79,6 +80,7 @@ jobs:
           git commit -m "更新 weibo-crawler" || echo "无更新"
       - name: 安装依赖
         run: |
+          sudo apt update
           sudo apt install ffmpeg
           pip install -r requirements.txt
           (cd ./weibo-crawler && pip install -r requirements.txt)
