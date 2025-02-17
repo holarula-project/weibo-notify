@@ -130,7 +130,7 @@ def get_file_mb(file: File):
         float: 文件 MB 大小
     """
     mb = stat(file.fp.name).st_size / (1024 * 1024.0)
-    print(f"{file.fp.name}: {mb}mb")
+    print(f"{file.fp.name.split("/")[-1]}: {mb}mb")
     return mb
 
 
@@ -276,8 +276,6 @@ async def send_pics(weibo: Row, thread: WebhookMessage):
                 end += 1
                 payload_size += mb
                 i += 1
-                print(payload_size)
-                print(img_files)
 
                 if i == len(img_files):
                     await cast(Webhook, webhook).send(
