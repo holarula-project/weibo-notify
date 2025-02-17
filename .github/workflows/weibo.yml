@@ -9,54 +9,54 @@ permissions:
   contents: write
 
 jobs:
-  # holarula:
-  #   name: "阿岚"
-  #   runs-on: ubuntu-latest
-  #   concurrency:
-  #     group: weibo
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         submodules: "recursive"
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: "3.12"
-  #         cache: "pip" # caching pip dependencies
-  #     - name: 设置 git 用户
-  #       run: |
-  #         git config user.name "github-actions[bot]"
-  #         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-  #     - name: 更新 submodules
-  #       run: |
-  #         git add -A
-  #         git commit -m "更新 weibo-crawler" || echo "无更新"
-  #     - name: 安装依赖
-  #       run: |
-  #         sudo apt update
-  #         sudo apt install ffmpeg
-  #         pip install -r requirements.txt
-  #         (cd ./weibo-crawler && pip install -r requirements.txt)
-  #     - name: 开爬！
-  #       run: |
-  #         cp ./holarula.json ./weibo-crawler/config.json
-  #         (cd ./weibo-crawler && python ./weibo.py > /dev/null 2>&1)
-  #     - name: 发送到 Discord
-  #       env:
-  #         WEBHOOK_URL: ${{ secrets.WEBHOOK_LAN }}
-  #         S3_BUCKET: ${{ secrets.S3_BUCKET }}
-  #         S3_KEY_ID: ${{ secrets.S3_KEY_ID }}
-  #         S3_KEY_SECRET: ${{ secrets.S3_KEY_SECRET }}
-  #         S3_REGION: ${{ secrets.S3_REGION }}
-  #         S3_URL: ${{ secrets.S3_URL }}
-  #       run: python ./notify.py holarula
-  #     - name: 重设 weibo-crawler 文件夹
-  #       run: (cd ./weibo-crawler && git checkout -- .)
-  #     - name: 保存发送记录
-  #       run: |
-  #         git pull
-  #         git add ./holarula_sent.json
-  #         git commit -m "更新微博" || echo "无新微博"
-  #         git push
+  holarula:
+    name: "阿岚"
+    runs-on: ubuntu-latest
+    concurrency:
+      group: weibo
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip" # caching pip dependencies
+      - name: 设置 git 用户
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: 更新 submodules
+        run: |
+          git add -A
+          git commit -m "更新 weibo-crawler" || echo "无更新"
+      - name: 安装依赖
+        run: |
+          sudo apt update
+          sudo apt install ffmpeg
+          pip install -r requirements.txt
+          (cd ./weibo-crawler && pip install -r requirements.txt)
+      - name: 开爬！
+        run: |
+          cp ./holarula.json ./weibo-crawler/config.json
+          (cd ./weibo-crawler && python ./weibo.py > /dev/null 2>&1)
+      - name: 发送到 Discord
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_LAN }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_KEY_ID: ${{ secrets.S3_KEY_ID }}
+          S3_KEY_SECRET: ${{ secrets.S3_KEY_SECRET }}
+          S3_REGION: ${{ secrets.S3_REGION }}
+          S3_URL: ${{ secrets.S3_URL }}
+        run: python ./notify.py holarula
+      - name: 重设 weibo-crawler 文件夹
+        run: (cd ./weibo-crawler && git checkout -- .)
+      - name: 保存发送记录
+        run: |
+          git pull
+          git add ./holarula_sent.json
+          git commit -m "更新微博" || echo "无新微博"
+          git push
   senjoukun:
     name: "线条"
     runs-on: ubuntu-latest
