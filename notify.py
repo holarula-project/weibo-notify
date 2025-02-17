@@ -29,6 +29,8 @@ STATUS = {
     "SENT": 1,  # 已经发送过一次了
     "RESENT": 2,  # 二次发送，更新留言
 }
+# Discord 文件上传大小限制 - ? MB
+MB_LIMIT = 10
 
 
 def check_sent(weibo: Row) -> int:
@@ -266,21 +268,23 @@ async def send_pics(weibo: Row, thread: WebhookMessage):
         while i < len(img_files):
             mb = get_file_mb(img_files[i])
 
-            if mb > 25:
-                raise Exception("单文件不可大于25MB")
+            if mb > MB_LIMIT:
+                raise Exception(f"单文件不可大于{MB_LIMIT}MB")
 
-            # 加新文件少于 25 MB 以及总文件数少于 9
-            if payload_size + mb < 25 and (end - start) < 9:
+            # 加新文件少于 (Discord上传限制 - ?MB) 以及总文件数少于 9
+            if payload_size + mb < MB_LIMIT and (end - start) < 9:
                 end += 1
                 payload_size += mb
                 i += 1
+                print(payload_size)
+                print(img_files)
 
                 if i == len(img_files):
                     await cast(Webhook, webhook).send(
                         files=img_files[start:end], thread=thread
                     )
-            # 每次最多发送9张图片 or 25 MB
-            elif payload_size + mb > 25 or (end - start) == 9:
+            # 每次最多发送9张图片 or (Discord上传限制 - ?MB）
+            elif payload_size + mb > MB_LIMIT or (end - start) == 9:
                 await cast(Webhook, webhook).send(
                     files=img_files[start:end], thread=thread
                 )
@@ -327,7 +331,7 @@ async def send_vid(weibo: Row, thread: WebhookMessage):
                     split(f"ffmpeg -v error -i {abspath(vid['path'])} -f null -"),
                     capture_output=True,
                 ).stderr.decode("utf-8")
-                if mb > 25:
+                if mb > MB_LIMIT:
                     upload_to_s3(file)
                     msg = f"> 已上传视频: `{file.filename}` ({round(mb, 2)}MB)"
                     if len(err_msg) > 0:
