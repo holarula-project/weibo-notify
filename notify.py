@@ -127,7 +127,9 @@ def get_file_mb(file: File):
     Returns:
         float: 文件 MB 大小
     """
-    return stat(file.fp.name).st_size / (1024 * 1024.0)
+    mb = stat(file.fp.name).st_size / (1024 * 1024.0)
+    print(f"{file.fp.name}: {mb}mb")
+    return mb
 
 
 def get_msg_id(weibo: Row):
